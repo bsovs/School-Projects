@@ -1,0 +1,267 @@
+/*
+ * This class is used for the home screen of the BOWMAN Game.
+ * It contains an options menu, instructions menu, star
+ * game, and exit the game.
+ * 
+ */
+
+import javax.swing.*; //make sure you import this library!
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.geom.*;
+import java.util.ArrayList;
+import java.awt.image.*;
+import javax.imageio.*;
+import java.io.*;
+import java.net.*;
+import javax.swing.*;
+import sun.audio.*;
+
+class menu extends JFrame{
+  
+  private boolean startGame = false; //see if play button is pressed
+  private boolean optionsMenu = false; //see if options button is pressed
+  private boolean helpMenu = false; //see if help button is pressed
+  private boolean exitGame = false; //see if exit button is pressed
+  
+  private BufferedImage bg; //background image
+  private BufferedImage bowmanLogo; //bowman logo
+  private DrawCanvas canvas = new DrawCanvas();
+  
+  private JLabel helpVid; //jlabel to hold help video
+  private boolean firstOpenVid; //see if video has been opened
+  
+  private double locX, locY; //location of mouse on screen
+    
+  private Rectangle2D.Double play = new Rectangle2D.Double(310, 220, 180, 50);
+  private Rectangle2D.Double options = new Rectangle2D.Double(280, play.y+60, 220, 50);
+  private Rectangle2D.Double help = new Rectangle2D.Double(326, options.y+60, 140, 50);
+  private Rectangle2D.Double exit = new Rectangle2D.Double(333, help.y+60, 120, 50);
+  private Rectangle2D.Double back = new Rectangle2D.Double(333, 360, 140, 50);
+  private Rectangle2D.Double musicSwitch = new Rectangle2D.Double(340, 250, 30, 30);
+  private boolean isMusicOn = true; //see if music is on
+  private JTextField textField; //text field for user input of name
+  String userName = "Player"; //used to store username from text field
+  
+  menu(boolean playMusic, String userName){
+    this.playMusic = playMusic;
+    this.userName = userName;
+  }
+  
+  private boolean playMusic = true;
+  
+  //-------------------- Create Home Screen --------------------//
+  
+  public void homeScreen(){
+   
+    canvas.setPreferredSize(new Dimension(800, 600)); 
+    
+    Container cp = getContentPane();
+    cp.setLayout(new BorderLayout());
+    cp.add(canvas, BorderLayout.CENTER);
+    
+    if(playMusic==true){
+      music(); //start music
+    }
+    
+    this.addWindowListener(new WindowAdapter() {
+      public void windowClosing(WindowEvent we) {
+        System.exit(0);
+      }
+    });
+    
+    try{
+      bg = ImageIO.read( new File("assets/menu_bg.png" ));
+      bowmanLogo = ImageIO.read( new File("assets/bowman.png" ));
+    }
+    catch ( IOException exc )
+    {
+      System.out.println("image not found...");
+    }
+    
+    canvas.addMouseListener(new MouseAdapter() {
+      @Override
+      public void mousePressed(MouseEvent e) {
+        if(optionsMenu==false && helpMenu==false){
+          if(testIntersection(play, locX, locY)){ //start game
+            startGame = true;
+          }
+          else if(testIntersection(options, locX, locY)){ //options menu
+            optionsMenu = true;
+            textField.setVisible(true);
+          }
+          else if(testIntersection(help, locX, locY)){ //help menu
+            helpMenu = true;
+          }
+          else if(testIntersection(exit, locX, locY)){ //exit game
+            exitGame = true;
+          }
+        }
+        else{
+           if(testIntersection(musicSwitch, locX, locY)){ //back to home screen
+             if(optionsMenu==true){
+               if(isMusicOn==true){
+                 AudioPlayer.player.stop(as);
+                 isMusicOn = false;
+               }
+               else{
+                 AudioPlayer.player.start(as);
+                 isMusicOn = true;
+               }
+             }
+           }
+          if(testIntersection(back, locX, locY)){ //back to home screen
+            if(optionsMenu==true){
+              textField.setVisible(false);
+            }
+            optionsMenu = false;
+            helpMenu = false;
+            firstOpenVid = false;
+          }
+        }
+      }
+      
+      @Override
+      public void mouseReleased(MouseEvent e) {
+
+      }
+      
+      @Override
+      public void mouseEntered(MouseEvent e) {
+
+      }
+      
+      @Override
+      public void mouseExited(MouseEvent e) {
+
+      }
+      
+    });
+    
+    this.setResizable(false);
+    pack();           // pack all the components in the JFrame
+    setVisible(true); // show it
+    requestFocus();
+    
+    //create text field for username
+    textField = new JTextField("Player");
+    canvas.add(textField);
+    textField.setVisible(false);
+    textField.setBounds(canvas.getWidth()/2-20,150,180,40);
+    textField.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) { 
+        userName = textField.getText();
+      }
+    });
+    
+    while(true){
+      if(startGame==true){
+        this.dispose();
+        SetUp bw = new SetUp(userName);
+        bw.setUp(); //start the game
+        break;
+      }
+      else if(optionsMenu==true){
+        //
+      }
+      else if(helpMenu==true){
+        //
+      }
+      else if(exitGame==true){
+        this.dispose();
+        System.exit(0);
+      }
+      locX = MouseInfo.getPointerInfo().getLocation().getX() - canvas.getLocationOnScreen().getX(); //get mouse info
+      locY = MouseInfo.getPointerInfo().getLocation().getY() - canvas.getLocationOnScreen().getY(); 
+      canvas.repaint();
+    }
+    
+  }
+  
+  //-------------------- Intersection --------------------//
+  
+  private static boolean testIntersection(Shape shape, double x, double y) {
+    Area areaA = new Area(shape);
+    if (areaA.contains(x, y)) {
+      return true;
+    }
+    else{
+      return false;
+    }
+  }
+  
+  //-------------------- Play Music --------------------//
+  
+  //Sound/Music
+  public static InputStream in = null;
+  public static AudioStream as = null;  
+  
+  //this method plays the background music for the game
+  public void music(){
+    
+    try{
+      in = new FileInputStream("assets/gotTheme.wav"); //import song
+      as = new AudioStream(in); //add song to audio stream
+    }
+    catch(IOException error){ 
+      System.err.println("file not found"); //error
+    }
+    
+    AudioPlayer.player.start(as); //start audio player for the song 
+    
+  }
+
+  
+  //-------------------- Draw Canvas --------------------//
+  
+  class DrawCanvas extends JPanel {
+        public void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2d = (Graphics2D)g;
+            
+            g2d.drawImage(bg, 0, -200, this);
+            
+            if(optionsMenu==false && helpMenu==false){
+              g2d.drawImage(bowmanLogo, 140, 40, this);
+              g2d.setFont(new Font("Goudy Handtooled BT", Font.BOLD, 45));
+              g2d.drawString("START", (int)play.x+10, (int)play.y+40);
+              g2d.drawString("OPTIONS", (int)options.x+10, (int)options.y+40);
+              g2d.drawString("HELP", (int)help.x+10, (int)help.y+40);
+              g2d.drawString("EXIT", (int)exit.x+10, (int)exit.y+40);
+            }
+            else if(optionsMenu==true){
+              g2d.setFont(new Font("Goudy Handtooled BT", Font.BOLD, 15));
+              g2d.drawString("UserName: ", canvas.getWidth()/2-110, 175);
+              g2d.setFont(new Font("Goudy Handtooled BT", Font.BOLD, 11));
+              g2d.drawString("Press Enter...", canvas.getWidth()/2+18, 208);
+              g2d.setFont(new Font("Goudy Handtooled BT", Font.BOLD, 45));
+              g2d.drawString("BACK", (int)back.x+10, (int)back.y+40);
+              if(isMusicOn==true){
+                g2d.fill(musicSwitch);
+              }
+              else{
+                g2d.draw(musicSwitch);
+              }
+              g2d.setFont(new Font("Goudy Handtooled BT", Font.BOLD, 15));
+              g2d.drawString("MUSIC ON/OFF", (int)musicSwitch.x+50, (int)musicSwitch.y+20);
+            }
+            else if(helpMenu==true){
+              g2d.setFont(new Font("Goudy Handtooled BT", Font.BOLD, 45));
+              g2d.drawString("BACK", (int)back.x+10, (int)back.y+40);
+              g2d.setFont(new Font("Goudy Handtooled BT", Font.BOLD, 15));
+              g2d.drawString("1. Click and Hold Left Mouse", 150, 180);
+              g2d.drawString("2. Drag Back to Charge up Bow", 150, 210);
+              g2d.drawString("3. Aim Bow to Hit the Target", 150, 240);
+              g2d.drawString("4. Release and Watch the Arrow Fly", 150, 270);
+              try{
+                Image icon = new ImageIcon((getClass().getResource("assets/help2.gif"))).getImage();
+                g2d.drawImage(icon, canvas.getWidth()/2+50, 120, this);
+              }
+              catch(Exception e){
+                System.out.println("GIF not found...");
+              }
+            }
+        }
+  }
+  
+}

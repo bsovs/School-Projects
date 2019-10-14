@@ -1,0 +1,894 @@
+/*
+ * Program: BOWMAN
+ * 
+ * Names: Errol Bowman & Brandon Sovran
+ * Date: May 31, 2018
+ * 
+ * Program Description:
+ * 
+ * This is Bowman. The program is a game of archery between a player and a computer.
+ * The rules are simple, take turns shooting at your opponent until they have no
+ * health points left. You charge the bow by clicking and pulling back to gain power,
+ * thene release left mouse to shoot the arrow. The mouse is also used to aim the bow. 
+ * There is a home screen with instructions and the option to add a custom name as well. The fewer 
+ * shots you take the lower your score, and just like golf lower is better (only if you
+ * win though). High scores are shown post game. This is Bowman.
+ * 
+ */
+
+//imports
+import javax.swing.*; 
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.geom.*;
+import java.util.ArrayList;
+import java.awt.image.*;
+import javax.imageio.*;
+import java.io.*;
+
+class Bowman extends JFrame{
+  
+  DrawCanvas canvas = new DrawCanvas(); // the custom drawing canvas (extends JPanel)
+  static menu bw;
+  
+  /** The entry main() method */
+  public static void main(String[] args) {
+    
+    bw = new menu(true, "Player"); // set up the game
+    bw.homeScreen();
+    
+  }
+  
+  //images
+  BufferedImage bodyImage = null;
+  BufferedImage armImage = null;
+  BufferedImage arrowImage = null;
+  BufferedImage groundImage = null;
+  BufferedImage bowTemp = null;
+  BufferedImage bowImage[] = new BufferedImage[5];
+  BufferedImage sunImage = null;
+  BufferedImage cloudImage = null;
+  BufferedImage bgImage = null;
+  
+  //create the archers !!!
+  int playerHealth;
+  
+  Ellipse2D.Double playerHead = new Ellipse2D.Double(395,350,30,30);
+  Line2D.Double playerBody = new Line2D.Double(playerHead.x+playerHead.getWidth()/2, playerHead.y+playerHead.getHeight(), 
+                                               playerHead.x+playerHead.getWidth()/2, 
+                                               playerHead.y+playerHead.getHeight()+45);
+  Line2D.Double playerLeg = new Line2D.Double(playerHead.x+playerHead.getWidth()/2, 
+                                              playerHead.y+playerHead.getHeight()+45, 
+                                              playerHead.x+playerHead.getWidth()/2+10, 
+                                              playerHead.y+playerHead.getHeight()+45+25);
+  Rectangle2D.Double playerBodyBox = new Rectangle2D.Double(playerHead.x+playerHead.getWidth()/2-10, playerHead.y+playerHead.getHeight(), 
+                                                            20, 45);
+  Ellipse2D.Double playerLegBox = new Ellipse2D.Double(playerHead.x+playerHead.getWidth()/2-8, playerHead.y+playerHead.getHeight()+45, 
+                                                       20, 20);
+  
+  //health bar
+  Rectangle2D.Double playerHealthBar = new Rectangle2D.Double(playerHead.x+playerHead.getWidth()/2-playerHealth/2,  playerHead.y+playerHead.getHeight()+45+25+10, 100,10);
+  //actual health
+  Rectangle2D.Double playerHealthLevel;
+  
+  
+  //cpu
+  int cpuHealth;
+  int distance = (int)(Math.random()*300 + 600);
+  
+  Ellipse2D.Double cpuHead = new Ellipse2D.Double(distance+395,350,30,30);
+  Line2D.Double cpuBody = new Line2D.Double(cpuHead.x+cpuHead.getWidth()/2, cpuHead.y+cpuHead.getHeight(), 
+                                            cpuHead.x+cpuHead.getWidth()/2, 
+                                            cpuHead.y+cpuHead.getHeight()+45);
+  Rectangle2D.Double cpuBodyBox = new Rectangle2D.Double(cpuHead.x+cpuHead.getWidth()/2-10, cpuHead.y+cpuHead.getHeight(), 
+                                                         20, 45);
+  Ellipse2D.Double cpuLegBox = new Ellipse2D.Double(cpuHead.x+cpuHead.getWidth()/2-8, cpuHead.y+cpuHead.getHeight()+45, 
+                                                    20, 20);
+  Line2D.Double cpuLeg = new Line2D.Double(cpuHead.x+cpuHead.getWidth()/2, 
+                                           cpuHead.y+cpuHead.getHeight()+45, 
+                                           cpuHead.x+cpuHead.getWidth()/2+10, 
+                                           cpuHead.y+cpuHead.getHeight()+45+25);
+  
+  //Health Bar
+  Rectangle2D.Double cpuHealthBar = new Rectangle2D.Double(cpuHead.x+cpuHead.getWidth()/2-cpuHealth/2,  playerHead.y+playerHead.getHeight()+45+25+10, 100,10);
+  //actual health
+  Rectangle2D.Double cpuHealthLevel;
+  
+  //For wall
+  Rectangle2D.Double wall;
+  double xDistance = (cpuHead.x - playerHead.x)/2*Math.random() + (cpuHead.x - playerHead.x)/4;
+  boolean hasHitWall = false;
+  
+  ArrayList<Ellipse2D.Double> arrowShape = new ArrayList<Ellipse2D.Double>(); //create arrow
+  
+  private double power, angle, tempAngle; //power of bow and angle of shot
+  private double[] locX = new double[2], locY = new double[2], arrow = new double[2]; //location of line
+  private boolean firstPress, firstRelease, inMotion; //see if mouse is pressed
+  private Timer timer, timer2, timer3, timer4;
+  private int counter; //time after releasal
+  private boolean upWards; //see if arrow is going up
+  private boolean newArrow = true; //see if new arrow needs to be created
+  private boolean playerTurn = true; //see who's turn it is
+  private boolean cpuAim = false; //see if cpu is aiming
+  private double headTemp; //temp variable used to store location of head in each turn
+  private ArrayList<Double> deadArrow = new ArrayList<Double>(); //for dead arrows x values
+  private ArrayList<Double> deadArrowAng = new ArrayList<Double>(); //for dead arrows angle values
+  private int temp; //temp variable for counting
+  private boolean ani = false; //see if animation
+  private double slope = 0; //get slope of current position on curve
+  private boolean playerShot; //see if it was the players shot or the CPU
+  private boolean isBackwards; //see if arrow was shot backwards
+  private BufferedImage bowImagePower = null; //bow image to be shown
+  private double powerTemp; //temp variable for power
+  private double cputempAngle; //temp angle for cpu angle of bow
+  private int score; //score of player
+  private boolean gameOver, exitGame; //see if game is over
+  private double locXgameOver, locYgameOver; //location of mouse after game over
+  private Rectangle2D.Double exit = new Rectangle2D.Double(380, 500, 0, 0);
+  
+  //-------------------- Main Method of Game --------------------//
+  
+  //this method is used to detect the arrow shot of the cpu and player and move the screen
+  //according to the arrow
+  void playGame(){
+    
+    //mouse listener
+    canvas.addMouseListener(new MouseAdapter() {
+      @Override
+      public void mousePressed(MouseEvent e) {
+        if(gameOver==true){
+          if(testIntersection(exit, locXgameOver, locYgameOver)){
+            exitGame = true;
+          }
+        }
+        else{
+          if(inMotion==false && ani==false){
+            locX[0] = MouseInfo.getPointerInfo().getLocation().getX() - canvas.getLocationOnScreen().getX();
+            locY[0] = MouseInfo.getPointerInfo().getLocation().getY() - canvas.getLocationOnScreen().getY(); 
+            //set the initial position of the line
+            firstPress = true;
+          }
+        }
+      }
+      
+      @Override
+      public void mouseReleased(MouseEvent e) {
+        if(inMotion==false && firstPress==true && ani==false){
+          if(locX[0]!=locX[1]){
+            angle = -Math.toDegrees(Math.atan((locY[1]-locY[0])/(locX[1]-locX[0]))); //set the angle
+            if(locX[0]>locX[1] && angle>=0){
+              angle+=180;
+            }
+            else if(locY[0]<locY[1] && angle<0){
+              angle+=360;
+            }
+            else if(locY[0]>locY[1] && angle<0){
+              angle+=180;
+            }
+            
+            if(locX[0]<locX[1]){
+              isBackwards = true; //arrow was shot backwards
+            }
+            else{
+              isBackwards = false;
+            }
+            
+          }
+          else if(locY[0]<locY[1]){
+            angle = 270;
+          }
+          else{
+            angle = 90;
+          }
+          power = Math.hypot((locX[1]-locX[0]), (locY[1]-locY[0])); //set the power
+          firstPress = false;
+          firstRelease = true;
+          upWards = false;
+          counter = 0;
+          locX[0] = 0;
+          locY[0] = 0;  //reset the values
+          locX[1] = 0;
+          locY[1] = 0;  //reset the values
+          //
+          //y = a(x-h)^2 + k
+          if(angle>180){
+            angle = angle-180;
+            upWards = true;
+          }
+          arrow[0] = 0;
+          playerShot = true;
+        }
+      }
+      
+      @Override
+      public void mouseEntered(MouseEvent e) {
+        
+      }
+      
+      @Override
+      public void mouseExited(MouseEvent e) {
+        
+      }
+      
+    });
+    
+    //loop while players are alive
+    while(playerHealth>0 && cpuHealth>0){
+      if(playerTurn==false){
+        if(cpuHead.x<=canvas.getWidth()/2){
+          ani = false;
+        }
+      }
+      else{
+        if(playerHead.x>=canvas.getWidth()/2){
+          ani = false;
+        }
+      }
+      if(newArrow==true && ani==false){
+        if(playerTurn==true){
+          arrowShape.add(0, new Ellipse2D.Double(playerHead.x+30, 400, 5, 5));
+          slope = 0;
+          playerTurn = false;
+          score++; //increment the score
+        }
+        else if(ani==false){
+          
+          //used for cpu aiming
+          
+          arrowShape.add(0, new Ellipse2D.Double(cpuHead.x, 400, 5, 5));
+          slope = 0;
+          angle = (Math.random() * 40) + 120;
+          power = (Math.random() * 20) + (distance/3);
+          arrow[0] = 0;
+          upWards = true;
+          counter = 0;
+          
+          locX[0] = canvas.getWidth()/2+(Math.random()*100);
+          locY[0] = canvas.getHeight()/2+(Math.random()*50);
+          locX[1] = locX[0];
+          locY[1] = locY[0];
+          
+          inMotion = true;
+          cpuAim = true;
+          firstRelease = false;
+          
+          timer2 = new Timer(10, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+              
+              //set location of mouse on click
+              if(locX[1] < locX[0]+(power*Math.cos(Math.toRadians(180-angle)))){
+                locX[1]++;
+              }
+              if(locY[1] < locY[0]+(power*Math.sin(Math.toRadians(180-angle)))){
+                locY[1]++;
+              }
+              if(locX[1] >= locX[0]+(power*Math.cos(Math.toRadians(180-angle))) && locY[1] >= locY[0]+(power*Math.sin(Math.toRadians(180-angle)))){
+                cpuAim = false;
+                firstRelease = true;
+                playerTurn = true;
+                playerShot = false;
+                timer2.stop();
+              }
+              cputempAngle = -Math.toDegrees(Math.atan((locY[1]-locY[0])/(locX[1]-locX[0]))); //set the angle
+            }
+          });
+          timer2.start();
+          
+        }
+        newArrow = false;
+      }
+      if(firstPress==true && ani==false){
+        
+        
+        if(Math.hypot(((MouseInfo.getPointerInfo().getLocation().getX() - canvas.getLocationOnScreen().getX())-locX[0]), ((MouseInfo.getPointerInfo().getLocation().getY() - canvas.getLocationOnScreen().getY())-locY[0])) >= 375)  {
+          double j = Math.hypot(((MouseInfo.getPointerInfo().getLocation().getX() - canvas.getLocationOnScreen().getX())-locX[0]), ((MouseInfo.getPointerInfo().getLocation().getY() - canvas.getLocationOnScreen().getY())-locY[0]))/375;
+          locX[1] = ((MouseInfo.getPointerInfo().getLocation().getX() - canvas.getLocationOnScreen().getX()) - locX[0])/j + locX[0];
+          locY[1] = ((MouseInfo.getPointerInfo().getLocation().getY() - canvas.getLocationOnScreen().getY()) - locY[0])/j + locY[0];
+          
+        }
+        
+        else if(Math.hypot(((MouseInfo.getPointerInfo().getLocation().getX() - canvas.getLocationOnScreen().getX())-locX[0]), ((MouseInfo.getPointerInfo().getLocation().getY() - canvas.getLocationOnScreen().getY())-locY[0])) < 375) {
+          locX[1] = (MouseInfo.getPointerInfo().getLocation().getX() - canvas.getLocationOnScreen().getX());
+          locY[1] = (MouseInfo.getPointerInfo().getLocation().getY() - canvas.getLocationOnScreen().getY()); //set the final position on line
+        }
+        
+        
+        if(firstRelease==false){
+          powerTemp = Math.hypot((locX[1]-locX[0]), (locY[1]-locY[0])); //set the power
+          //set the angle
+          if(locX[0]!=locX[1]){
+            tempAngle = -Math.toDegrees(Math.atan((locY[1]-locY[0])/(locX[1]-locX[0]))); //set the angle
+            //change angle for exceptions
+            if(locX[0]>locX[1] && tempAngle>=0){
+              tempAngle+=180;
+            }
+            else if(locY[0]<locY[1] && tempAngle<0){
+              tempAngle+=360;
+            }
+            else if(locY[0]>locY[1] && tempAngle<0){
+              tempAngle+=180;
+            }     
+          }
+          else if(locY[0]<locY[1]){
+            tempAngle = 270;
+          }
+          else{
+            tempAngle = 90;
+          }
+        }
+        
+      }
+      else if(firstRelease==true && ani==false){
+        inMotion = true;
+        headTemp = playerHead.x;
+        powerTemp = 0; //reset power temp
+        for(int i=0; i<arrowShape.size()-1; i++){
+          deadArrow.set(i, arrowShape.get(i+1).x);
+        }
+        timer = new Timer(1, new ActionListener() {
+          @Override
+          public void actionPerformed(ActionEvent e) {
+            counter++;
+            if(upWards==true){
+              arrow[0] += power*Math.cos(Math.toRadians(angle))/100.0; //increment the x value
+              arrow[1] = -counter/100.0*(power*Math.sin(Math.toRadians(angle))) + 40.0*Math.pow(counter/100.0,2); //create arc for arrow
+              slope = -1/100.0*(power*Math.sin(Math.toRadians(angle))) + (80.0*counter)/(100*100);
+            }
+            else{
+              arrow[0] -= power*Math.cos(Math.toRadians(angle))/100.0; //increment the x value
+              arrow[1] = -counter/100.0*(power*Math.sin(Math.toRadians(angle+180))) + 40.0*Math.pow(counter/100.0,2); //create arc for arrow
+              slope = -1/100.0*(power*Math.sin(Math.toRadians(angle+180))) + (80.0*counter)/(100*100);
+            }
+            
+            if(playerTurn==false){
+              if(cpuHead.x>canvas.getWidth()/2){
+                //move all of the objects with arrow
+                arrowShape.get(0).y = (int)arrow[1]+400;
+                playerHead.x = headTemp-(int)arrow[0];
+                playerBodyBox.x = playerHead.x+playerHead.getWidth()/2-10;
+                playerLegBox.x = playerHead.x+playerHead.getWidth()/2-8;
+                cpuHead.x = distance+headTemp-(int)arrow[0];
+                cpuBodyBox.x = cpuHead.x+cpuHead.getWidth()/2-10;
+                cpuLegBox.x = cpuHead.x+cpuHead.getWidth()/2-8;
+                cpuHealthLevel.x = cpuHead.x+cpuHead.width/2-cpuHealthBar.width/2;
+                cpuHealthBar.x = cpuHead.x+cpuHead.width/2-cpuHealthBar.width/2;
+                playerHealthLevel.x = playerHead.x+playerHead.width/2-playerHealthBar.width/2;
+                playerHealthBar.x = playerHead.x+playerHead.width/2-playerHealthBar.width/2;
+                wall.x= xDistance + playerHead.x;
+                for(int i=0; i<arrowShape.size()-1; i++){
+                  arrowShape.get(i+1).x = deadArrow.get(i)-(int)arrow[0];
+                }
+              }
+              else{
+                arrowShape.get(0).x = (int)arrow[0]+playerHead.x+30; //move arrow image
+                arrowShape.get(0).y = (int)arrow[1]+400;
+              }
+            }
+            else{
+              if(playerHead.x<canvas.getWidth()/2){
+                //move all of the objects with arrow
+                arrowShape.get(0).y = (int)arrow[1]+400;
+                playerHead.x = headTemp-(int)arrow[0];
+                playerBodyBox.x = playerHead.x+playerHead.getWidth()/2-10;
+                playerLegBox.x = playerHead.x+playerHead.getWidth()/2-8;
+                cpuHead.x = distance+headTemp-(int)arrow[0];
+                cpuBodyBox.x = cpuHead.x+cpuHead.getWidth()/2-10;
+                cpuLegBox.x = cpuHead.x+cpuHead.getWidth()/2-8;
+                cpuHealthLevel.x = cpuHead.x+cpuHead.width/2-cpuHealthBar.width/2;
+                cpuHealthBar.x = cpuHead.x+cpuHead.width/2-cpuHealthBar.width/2;
+                playerHealthLevel.x = playerHead.x+playerHead.width/2-playerHealthBar.width/2;
+                playerHealthBar.x = playerHead.x+playerHead.width/2-playerHealthBar.width/2;
+                wall.x= xDistance + playerHead.x;
+                for(int i=0; i<arrowShape.size()-1; i++){
+                  arrowShape.get(i+1).x = deadArrow.get(i)-(int)arrow[0];
+                }
+              }
+              else{
+                arrowShape.get(0).x = (int)arrow[0]+cpuHead.x; //move arrow image
+                arrowShape.get(0).y = (int)arrow[1]+400;
+              }
+            }
+            
+            if(collisionHelper()/*start the collision detection*/==false && hasHitWall == false){
+              if(playerHealthLevel.width<0){
+                playerHealthLevel.width = 0;
+              }
+              else if(cpuHealthLevel.width<0){
+                cpuHealthLevel.width = 0;
+              }
+              inMotion = false;
+              newArrow = true;
+              deadArrow.add(arrowShape.get(0).x);
+              if(playerShot==true && isBackwards==false){
+                deadArrowAng.add(0, Math.atan(slope));
+              }
+              else{
+                deadArrowAng.add(0, Math.PI-Math.atan(slope));
+              }
+              timer.stop();
+            }
+            else if((arrow[1]+400)>450-5/*for ball*/|| hasHitWall){
+              if(playerTurn==false){
+                if(cpuHead.x>canvas.getWidth()/2){  
+                  temp = 1;
+                  headTemp = playerHead.x;
+                  deadArrow.add(arrowShape.get(0).x);
+                  for(int i=0; i<arrowShape.size(); i++){
+                    deadArrow.set(i, arrowShape.get(i).x);
+                  }
+                  ani = true;
+                  timer3 = new Timer(7, new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                      if(cpuHead.x>canvas.getWidth()/2){            
+                        playerHead.x = headTemp-temp;
+                        playerBodyBox.x = playerHead.x+playerHead.getWidth()/2-10;
+                        playerLegBox.x = playerHead.x+playerHead.getWidth()/2-8;
+                        cpuHead.x = distance+headTemp-temp;
+                        cpuBodyBox.x = cpuHead.x+cpuHead.getWidth()/2-10;
+                        cpuLegBox.x = cpuHead.x+cpuHead.getWidth()/2-8;
+                        cpuHealthLevel.x = cpuHead.x+cpuHead.width/2-cpuHealthBar.width/2;
+                        cpuHealthBar.x = cpuHead.x+cpuHead.width/2-cpuHealthBar.width/2;
+                        playerHealthLevel.x = playerHead.x+playerHead.width/2-playerHealthBar.width/2;
+                        playerHealthBar.x = playerHead.x+playerHead.width/2-playerHealthBar.width/2;
+                        wall.x= xDistance + playerHead.x;
+                        for(int i=0; i<arrowShape.size(); i++){
+                          arrowShape.get(i).x = deadArrow.get(i)-temp;
+                        }
+                        temp++;
+                      }
+                      else{
+                        timer3.stop();
+                      }
+                    }
+                  });
+                  timer3.start();
+                }
+              }
+              else{
+                if(playerHead.x<canvas.getWidth()/2){ 
+                  temp = 1;
+                  headTemp = playerHead.x;
+                  deadArrow.add(arrowShape.get(0).x);
+                  for(int i=0; i<arrowShape.size(); i++){
+                    deadArrow.set(i, arrowShape.get(i).x);
+                  }
+                  ani = true;
+                  timer3 = new Timer(7, new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                      if(playerHead.x<canvas.getWidth()/2){            
+                        playerHead.x = headTemp+temp;
+                        playerBodyBox.x = playerHead.x+playerHead.getWidth()/2-10;
+                        playerLegBox.x = playerHead.x+playerHead.getWidth()/2-8;
+                        cpuHead.x = distance+headTemp+temp;
+                        cpuBodyBox.x = cpuHead.x+cpuHead.getWidth()/2-10;
+                        cpuLegBox.x = cpuHead.x+cpuHead.getWidth()/2-8;
+                        cpuHealthLevel.x = cpuHead.x+cpuHead.width/2-cpuHealthBar.width/2;
+                        cpuHealthBar.x = cpuHead.x+cpuHead.width/2-cpuHealthBar.width/2;
+                        playerHealthLevel.x = playerHead.x+playerHead.width/2-playerHealthBar.width/2;
+                        playerHealthBar.x = playerHead.x+playerHead.width/2-playerHealthBar.width/2;
+                        wall.x= xDistance + playerHead.x;
+                        for(int i=0; i<arrowShape.size(); i++){
+                          arrowShape.get(i).x = deadArrow.get(i)+temp;
+                        }
+                        temp++;
+                      }
+                      else{
+                        timer3.stop();
+                      }
+                    }
+                  });
+                  timer3.start();
+                }
+              }
+              hasHitWall = false;
+              inMotion = false;
+              newArrow = true;
+              deadArrow.add(arrowShape.get(0).x);
+              if(playerShot==true && isBackwards==false){
+                deadArrowAng.add(0, Math.atan(slope));
+              }
+              else{
+                deadArrowAng.add(0, Math.PI-Math.atan(slope));
+              }
+              timer.stop();
+            }
+          }
+        });
+        timer.start();
+        firstRelease = false;
+      }
+      canvas.repaint();
+    }
+    
+    gameOver = true; //game is over
+    exit.width = 120;
+    exit.height = 50;
+    
+    while(true){
+      if(exitGame==true){
+        break;
+      }
+      locXgameOver = MouseInfo.getPointerInfo().getLocation().getX() - canvas.getLocationOnScreen().getX();
+      locYgameOver = MouseInfo.getPointerInfo().getLocation().getY() - canvas.getLocationOnScreen().getY(); 
+      canvas.repaint();
+    }
+  }
+  
+  //-------------------- Collision --------------------//
+  
+  //helper code to test all intersections
+  private boolean collisionHelper(){
+    if(playerTurn==false){   
+      if(testIntersection(arrowShape.get(0), cpuHead)) { //cpu head
+        cpuHealth -= 50;
+        cpuHealthLevel.width -= 50;
+        return false;
+      }
+      
+      else if(testIntersection(arrowShape.get(0), cpuBodyBox)) { //cpu body
+        cpuHealth -= 30;
+        cpuHealthLevel.width -= 30;
+        return false;
+      } 
+      else if(testIntersection(arrowShape.get(0), cpuLegBox)) { //cpu leg
+        cpuHealth -= 10;
+        cpuHealthLevel.width -= 10;
+        return false;
+      }
+    }
+    else{   
+      if(testIntersection(arrowShape.get(0), playerHead)) { //player head
+        playerHealth -= 50;
+        playerHealthLevel.width -= 50;
+        return false;
+      } 
+      else if(testIntersection(arrowShape.get(0), playerBodyBox)) { //player body
+        playerHealth -= 50;
+        playerHealthLevel.width -= 30;
+        return false;
+      } 
+      else if(testIntersection(arrowShape.get(0), playerLegBox)) { //player leg
+        playerHealth -= 10;
+        playerHealthLevel.width -= 10;
+        return false;
+      }
+    }
+    
+    if(testIntersection(arrowShape.get(0),wall))  { //hit the wall
+      hasHitWall = true;
+      return false;
+    }
+    
+    return true;
+  }
+  
+  //-------------------- Intersection --------------------//
+  
+  // test of intersection bettween shapeA and shapeB. Returns true if there is an intersection
+  private static boolean testIntersection(Shape shapeA, Shape shapeB) {
+    Area areaA = new Area(shapeA);
+    areaA.intersect(new Area(shapeB));
+    return !areaA.isEmpty();
+  }
+  
+  //-------------------- Button Press --------------------//
+  
+  //check if button is pressed
+  private static boolean testIntersection(Shape shape, double x, double y) {
+    Area areaA = new Area(shape);
+    if (areaA.contains(x, y)) {
+      return true;
+    }
+    else{
+      return false;
+    }
+  }
+  
+  //used to set high scores
+  //-------------------- High Scores --------------------//
+  
+  /*
+   * this method saves the high scores of players long term in a text file,
+   * it then goes on to sort the high scores and update it if a player receives a
+   * high score, players name input will also be taken if a high score is achieved
+   */
+  public String[][] highScore(){
+    
+    String highScore[][] = new String[2][10];
+    
+    /*
+     * this part of the method takes all the scores and names from the file, 
+     * then puts them into arrays before sorting
+     */
+    try{ 
+      //Check the high scores
+      BufferedReader br = new BufferedReader(new FileReader("Scores.txt")); 
+      String line;
+      int lineNumber = 0;
+      //get all the high scores from lines
+      while (lineNumber < 10 && (line = br.readLine()) != null) {   
+        highScore[0][lineNumber] = line; //set the score to the one in that position
+        ++lineNumber;
+      }
+      //get all score names
+      while ((line = br.readLine()) != null && lineNumber < 20) {   
+        highScore[1][lineNumber - 10] = line; //set the score to the one in that position
+        ++lineNumber;
+      }
+    }
+    catch(IOException e){}
+    
+    if(playerWin()==true){
+      /*
+       * this part of the method takes all the scores and names from the file, 
+       * then sorts them into the correct order
+       */
+      try{ 
+        //update the high scores in text file
+        PrintWriter printWriter = new PrintWriter("Scores.txt");
+        
+        //reprint the scores
+        for(int i = 0; i<9; i++){
+          printWriter.println(highScore[0][i]+""); //print in file
+        }
+        
+        //if the score is good enough to make the top 10 high scores
+        if(score < Long.valueOf(highScore[0][9]).longValue() || Long.valueOf(highScore[0][9]).longValue()==0){
+          
+          printWriter.println(score + ""); //print in file
+          highScore[0][9] = score + ""; //update your high score into the leaderboard
+          
+          //ask for name of player, make sure it is less than 10 characters in length
+          highScore[1][9] = bw.userName; //ask for input for high score name
+          
+        }
+        else{
+          printWriter.println(highScore[0][9]+""); //print in file
+        }
+        
+        //reprint the names
+        for(int i = 0; i<10; i++){
+          printWriter.println(highScore[1][i]+""); //print in file
+        }
+        
+        //
+        //this part of the method sorts the array of high scores
+        //
+        for(int i = 1; i<10; i++){
+          //Swap the two scores
+          long item = Long.valueOf(highScore[0][i]).longValue();
+          String itemName = highScore[1][i];
+          int a = i;
+          // shift items to the right if next item is smaller
+          // than previous item
+          while (a > 0 && item > Long.valueOf(highScore[0][a-1]).longValue()) 
+          {
+            highScore[0][a] = highScore[0][a-1];
+            highScore[1][a] = highScore[1][a-1];
+            a--;
+          }
+          highScore[0][a] = item + "";
+          highScore[1][a] = itemName;
+        }
+        
+        printWriter.close (); //close file
+        
+      }
+      catch(IOException e){}
+      
+      /*
+       * this part of the method takes all the scores and names that have been sorted, 
+       * then updates the file with the correct order
+       */
+      try{ 
+        //update the high scores in text file
+        PrintWriter printWriter = new PrintWriter("Scores.txt");
+        
+        for(int i = 0; i<10; i++){
+          printWriter.println(highScore[0][i]); //print in file
+        }
+        for(int i = 0; i<10; i++){
+          printWriter.println(highScore[1][i]); //print in file
+        }
+        
+        printWriter.close (); //close file
+      }
+      catch(IOException e){} 
+    }
+    
+    return highScore;
+    
+  }
+  
+  //-------------------- Player Win --------------------//
+  
+  //see if the player won the game
+  private boolean playerWin(){
+    if(playerHealth<=0){
+      return false;
+    }
+    else{
+      return true;
+    }
+  }
+  
+  //-------------------- Draw Canvas --------------------//
+  
+  class DrawCanvas extends JPanel {
+    public void paintComponent(Graphics g) {
+      super.paintComponent(g);
+      Graphics2D g2d = (Graphics2D)g;
+      
+      if(gameOver==false){
+        
+        /*
+         //background
+         g2d.drawImage(bgImage, 0, 0, this);  
+         //sun
+         g2d.drawImage(sunImage, (int)(canvas.getWidth()-180), (int)(60), this);
+         //cloud
+         g2d.drawImage(cloudImage, (int)(canvas.getWidth()-480), (int)(60), this);
+         g2d.drawImage(cloudImage, (int)(canvas.getWidth()-300), (int)(79), this);
+         */
+        
+        g2d.drawLine(0,430,canvas.getWidth(),430); //draw ground
+        
+        //draw ground under players
+        g2d.drawImage(groundImage, (int)playerHead.x-60, 430, this);
+        g2d.drawImage(groundImage, (int)cpuHead.x-60, 430, this);
+        
+        //draw player sprite
+        g2d.drawImage(bodyImage, (int)(playerHead.x-11), (int)(playerHead.y), this);
+        
+        //draw CPU sprite
+        g2d.drawImage(bodyImage, (int)(cpuHead.x-11), (int)(cpuHead.y), this);
+        
+        if(firstPress==true){
+          g2d.drawLine((int)locX[0], (int)locY[0], (int)locX[1], (int)locY[1]); //draw line
+          g2d.setFont(new Font("Goudy Handtooled BT", Font.PLAIN, 15));
+          g2d.drawString("("+(int)tempAngle+"°)", (int)locX[0]-10, (int)locY[0]-10);
+          g2d.drawString("("+(int)powerTemp+")", (int)locX[1]+10, (int)locY[1]+10); //draw the coords
+        }
+        
+        
+        int pullBack; //drawback of arrow
+        
+        //draw bow back a distance
+        if(powerTemp>30 && powerTemp<75){
+          bowImagePower = bowImage[1];
+          pullBack = 8;
+        }
+        else if(powerTemp>=75 && powerTemp<125){
+          bowImagePower = bowImage[2];
+          pullBack = 13;
+        }
+        else if(powerTemp>=125 && powerTemp<200){
+          bowImagePower = bowImage[3];
+          pullBack = 14;
+        }
+        else if(powerTemp>=200){
+          bowImagePower = bowImage[4];
+          pullBack = 18;
+        }
+        else{
+          bowImagePower = bowImage[0];
+          pullBack = 3;
+        }
+        
+        //Used for moving arrow
+        if(inMotion==true && cpuAim==false){
+          if(playerTurn==true || isBackwards==true){
+            g2d.rotate(Math.PI-Math.atan(slope), (int)arrowShape.get(0).x, (int)arrowShape.get(0).y+2);
+          }
+          else{
+            g2d.rotate(Math.atan(slope), (int)arrowShape.get(0).x, (int)arrowShape.get(0).y+2);
+          }
+          g.drawImage(arrowImage, (int)arrowShape.get(0).x-15, (int)arrowShape.get(0).y-8, this);
+          if(playerTurn==true || isBackwards==true){
+            g2d.rotate(Math.PI-Math.atan(-slope), (int)arrowShape.get(0).x, (int)arrowShape.get(0).y+2);
+          }
+          else{
+            g2d.rotate(Math.atan(-slope), (int)arrowShape.get(0).x, (int)arrowShape.get(0).y+2);
+          }
+        }
+        
+        //wall
+        g2d.fill(wall);
+        
+        if(ani==false){
+          for(int i=1; i<arrowShape.size(); i++){
+            g2d.rotate(deadArrowAng.get(i-1), (int)arrowShape.get(i).x, (int)arrowShape.get(i).y+2);
+            g2d.drawImage(arrowImage, (int)arrowShape.get(i).x-15, (int)arrowShape.get(i).y-8, this);
+            g2d.rotate(-deadArrowAng.get(i-1), (int)arrowShape.get(i).x, (int)arrowShape.get(i).y+2);
+          }
+          if(firstRelease==false && firstPress==true){
+            g2d.rotate(Math.PI+Math.toRadians(-tempAngle), (int)(playerHead.x+playerHead.getWidth()/2), (int)(playerHead.y+playerHead.getWidth()/2+25));
+            g2d.drawImage(arrowImage, (int)arrowShape.get(0).x-pullBack, (int)arrowShape.get(0).y-18, this);
+            g2d.rotate(Math.PI+Math.toRadians(tempAngle), (int)(playerHead.x+playerHead.getWidth()/2), (int)(playerHead.y+playerHead.getWidth()/2+25));
+          }
+        }
+        else{
+          for(int i=0; i<arrowShape.size(); i++){
+            g2d.rotate(deadArrowAng.get(i), (int)arrowShape.get(i).x, (int)arrowShape.get(i).y+2);
+            g2d.drawImage(arrowImage, (int)arrowShape.get(i).x-15, (int)arrowShape.get(i).y-8, this);
+            g2d.rotate(-deadArrowAng.get(i), (int)arrowShape.get(i).x, (int)arrowShape.get(i).y+2);
+          }
+        }
+        
+        //draw bow
+        g2d.rotate(Math.PI+Math.toRadians(-tempAngle), (int)(playerHead.x+playerHead.getWidth()/2), (int)(playerHead.y+playerHead.getWidth()/2+25));
+        g2d.drawImage(bowImagePower, (int)(playerHead.x+playerHead.getWidth()/2-5), (int)(playerHead.y+playerHead.getWidth()/2), this);
+        g2d.rotate(Math.PI+Math.toRadians(tempAngle), (int)(playerHead.x+playerHead.getWidth()/2), (int)(playerHead.y+playerHead.getWidth()/2+25));
+        
+        //player arm
+        g2d.rotate(Math.PI+Math.toRadians(-tempAngle), (int)(playerHead.x+playerHead.getWidth()/2), (int)(playerHead.y+48));
+        g2d.drawImage(armImage, (int)(playerHead.x+playerHead.getWidth()/2-5), (int)(playerHead.y+38), this);
+        g2d.rotate(Math.PI+Math.toRadians(tempAngle), (int)(playerHead.x+playerHead.getWidth()/2), (int)(playerHead.y+48));
+        
+        //draw CPU line of power
+        if(cpuAim==true){
+          g2d.drawLine((int)locX[0], (int)locY[0], (int)locX[1], (int)locY[1]); //draw line
+          g2d.setFont(new Font("Goudy Handtooled BT", Font.PLAIN, 15));
+          g2d.drawString("("+(int)(-1*cputempAngle)+"°)", (int)locX[0]-10, (int)locY[0]-10);
+          g2d.drawString("("+(int)Math.hypot((locX[1]-locX[0]),(locY[1]-locY[0]))+")", (int)locX[1]+10, (int)locY[1]+10); //draw the coords
+        }
+        
+        //draw cpu bow
+        g2d.rotate(Math.PI+Math.toRadians(-cputempAngle), (int)(cpuHead.x+cpuHead.getWidth()/2), (int)(cpuHead.y+cpuHead.getWidth()/2+25));
+        g2d.drawImage(bowImagePower, (int)(cpuHead.x+cpuHead.getWidth()/2-5), (int)(cpuHead.y+cpuHead.getWidth()/2), this);
+        g2d.rotate(Math.PI+Math.toRadians(cputempAngle), (int)(cpuHead.x+cpuHead.getWidth()/2), (int)(cpuHead.y+cpuHead.getWidth()/2+25));
+        
+        //cpu arm
+        g2d.rotate(Math.PI+Math.toRadians(-cputempAngle), (int)(cpuHead.x+cpuHead.getWidth()/2), (int)(cpuHead.y+48));
+        g2d.drawImage(armImage, (int)(cpuHead.x+cpuHead.getWidth()/2-5), (int)(cpuHead.y+38), this);
+        g2d.rotate(Math.PI+Math.toRadians(cputempAngle), (int)(cpuHead.x+cpuHead.getWidth()/2), (int)(cpuHead.y+48));
+        
+        //health bars
+        g2d.fill(cpuHealthLevel);
+        g2d.draw(cpuHealthBar);
+        g2d.fill(playerHealthLevel);
+        g2d.draw(playerHealthBar);
+        g2d.setFont(new Font("Goudy Handtooled BT", Font.PLAIN, 15));
+        g2d.drawString((int)(cpuHealthLevel.width/cpuHealthBar.width*100)+"%", (int)(cpuHealthBar.x+cpuHealthBar.width/2-15), (int)(cpuHealthBar.y+cpuHealthBar.height+20));
+        g2d.setFont(new Font("Goudy Handtooled BT", Font.PLAIN, 15));
+        g2d.drawString((int)(playerHealthLevel.width/playerHealthBar.width*100)+"%", (int)(playerHealthBar.x+playerHealthBar.width/2-15), (int)(playerHealthBar.y+playerHealthBar.height+20));
+      }
+      else{
+        
+        //  ** Print out high scores on to the screen  ** //
+        String highScore[][] = highScore();
+        int a = 9;
+        g2d.setFont(new Font("Goudy Handtooled BT", Font.BOLD, 30));
+        for(int i = 0; i<10; i++){
+          if(i>0){
+            g2d.drawString((a+1) + ": " + highScore[1][i], 200, (200+(30*a))); //Print the High Scores
+          }
+          else{
+            g2d.drawString((a+1) + ": " + highScore[1][i], 188, (200+(30*a))); //Print the High Scores
+          }
+          g2d.drawString("  |  " + highScore[0][i], 500, (200+(30*a)));
+          a--;
+        }
+        
+        if(playerHealth<=0){
+          g2d.setFont(new Font("Goudy Handtooled BT", Font.BOLD, 55));
+          g2d.drawString("YOU LOSE!", (int)exit.x+60, (int)exit.y-420);
+        }
+        else{
+          g2d.setFont(new Font("Goudy Handtooled BT", Font.BOLD, 55));
+          g2d.drawString("YOU WIN!", (int)exit.x+60, (int)exit.y-420);
+        }
+        
+        g2d.setFont(new Font("Goudy Handtooled BT", Font.BOLD, 55));
+        g2d.drawString("GAME OVER:", (int)exit.x-350, (int)exit.y-420);
+        g2d.setFont(new Font("Goudy Handtooled BT", Font.BOLD, 45));
+        g2d.drawString("EXIT", (int)exit.x+10, (int)exit.y+40);
+        g2d.drawString("SCORE: " + score, (int)exit.x-60, (int)exit.y-350);
+      }
+    }
+  }
+  
+}
