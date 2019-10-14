@@ -1,0 +1,67 @@
+Brandon Sovran - Collision Game
+
+Date: Wednesday May 10th 2017
+Version 1 of 8
+
+- program generates a console window, a rectangle and line
+- rectangle can be moved by using arrow keys
+- on down arrow the ractangle gets smaller (crouches)
+- on up arrow it moves up then falls back down (jumps)
+
+
+Date: Friday May 12th 2017
+Version 2 of 8
+
+- program includes an image of stickman instead of a rectangle
+- A brick wall image is generated and continues to come across the screen towards the player
+- the players score is shown in the top right corner of the screen
+
+Date: Tuesday May 16th 2017
+Version 3 of 8
+
+- collision detection between player and walls
+- multiple walls at different places are genrated
+- game is ended once player collides with the wall
+
+Date: Thursday May 18th 2017
+Version 4 of 8
+
+- added changing background on each play that is generated at random
+- added start button that crashes the program
+
+Date: Thursday May 25th 2017
+Version 5 of 8
+
+- fixed bug with start button
+- added exit button to close program
+- added a high score sheet that tracks high scores long term and sorts them in descending order
+
+Date: Monday May 29th 2017
+Version 6 of 8
+
+- added high score button to home to show  current high scores
+- added names to go along with the players high scores (no error messages yet)
+- game speeds up every 1000 points you add on to your score
+- fixed bug with high scores
+
+Date: Wednesday May 31st 2017
+Version 7 of 8
+
+- added music and sound affects
+- added error message to player input (must be 10 or less characters)
+- added images and text to home screen
+- added guide button to menue
+- added back button when you are in highscore or guide menues
+- added different types of font to text
+- fixed bug with overlapping music
+
+Date: Friday June 2nd 2017
+Version 8 of 8
+
+- made game more enjoyable (randomized walls, easier to avoid)
+- fixed most in game bugs
+- added text to user manual
+- could not adjust high score alignment due to different sizes of letters
+- added block comments to code
+
+
